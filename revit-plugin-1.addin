@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+	<AddIn Type="Command">
+		<Name>revit-plugin-1</Name>
+		<FullClassName>revit_plugin_1.Class1</FullClassName>
+		<Text> Hello World Text </Text>
+		<Description> Hello World Description</Description>
+		<VisibilityMode>AlwaysVisible</VisibilityMode>
+		<Assembly>
+			C:\Users\croom-oc\source\repos\revit-plugin-1\bin\Debug\revit-plugin-1.dll
+		</Assembly>
+		<AddInId>502fe383-2648-4e98-adf8-5e6047f9dc34</AddInId>
+		<VendorId>snoopboopsnoop</VendorId>
+		<VendorDescription>Walter Cheng</VendorDescription>
+	</AddIn>
+</RevitAddIns>
