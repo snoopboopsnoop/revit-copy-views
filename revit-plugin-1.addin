@@ -1,9 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <RevitAddIns>
-	<AddIn Type="Command">
+	<AddIn Type="Application">
 		<Name>revit-plugin-1</Name>
-		<FullClassName>revit_plugin_1.Class1</FullClassName>
-		<Text> Hello World Text </Text>
+		<FullClassName>revit_plugin_1.Application</FullClassName>
+		<Text> bobr </Text>
 		<Description> Hello World Description</Description>
 		<VisibilityMode>AlwaysVisible</VisibilityMode>
 		<Assembly>
