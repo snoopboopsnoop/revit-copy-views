@@ -28,17 +28,17 @@ namespace revit_plugin_1
 
             string thisAssemblyPath = Assembly.GetExecutingAssembly().Location;
 
-            RibbonPanel panel = application.CreateRibbonPanel("My Panel");
+            RibbonPanel panel = application.CreateRibbonPanel("View Copy");
 
             PushButton button1 = panel.AddItem(new PushButtonData("Button1", "Copy to New", thisAssemblyPath, "revit_plugin_1.CopyNew")) as PushButton;
-            button1.ToolTip = "bobr";
+            button1.ToolTip = "Copies selection to a new file. If a file is already open, will copy to that one";
 
             Uri uri1 = new Uri(Path.Combine(Path.GetDirectoryName(thisAssemblyPath), "src", "mebeab.jpg"));
             BitmapImage bitmap = new BitmapImage(uri1);
             button1.LargeImage = bitmap;
 
             PushButton button2 = panel.AddItem(new PushButtonData("Button2", "Copy to...", thisAssemblyPath, "revit_plugin_1.CopyTo")) as PushButton;
-            button2.ToolTip = "bobr";
+            button2.ToolTip = "Copies selection to revit project of choice";
 
             Uri uri2 = new Uri(Path.Combine(Path.GetDirectoryName(thisAssemblyPath), "src", "goat.jpg"));
             BitmapImage bitmap2 = new BitmapImage(uri2);

@@ -2,13 +2,11 @@
 <RevitAddIns>
 	<AddIn Type="Application">
 		<Name>revit-plugin-1</Name>
-		<FullClassName>revit_plugin_1.Application</FullClassName>
+		<FullClassName>revit_plugin_1.App</FullClassName>
 		<Text> bobr </Text>
-		<Description> Hello World Description</Description>
+		<Description>Move Selections across Revit projects</Description>
 		<VisibilityMode>AlwaysVisible</VisibilityMode>
-		<Assembly>
-			C:\Users\croom-oc\source\repos\revit-plugin-1\bin\Debug\revit-plugin-1.dll
-		</Assembly>
+		<Assembly>./ViewCopyPlugin/revit-plugin-1.dll</Assembly>
 		<AddInId>502fe383-2648-4e98-adf8-5e6047f9dc34</AddInId>
 		<VendorId>snoopboopsnoop</VendorId>
 		<VendorDescription>Walter Cheng</VendorDescription>
