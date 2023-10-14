@@ -16,6 +16,9 @@ namespace revit_plugin_1
     [TransactionAttribute(TransactionMode.Manual)]
     public class CopyNew : IExternalCommand
     {
+        private List<ElementId> copiedViews = new List<ElementId>();
+        private List<Tuple<ElementId, ElementId>> linked = new List<Tuple<ElementId, ElementId>>();
+
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
             try
@@ -82,9 +85,9 @@ namespace revit_plugin_1
                 Transaction transactionNew = new Transaction(newDoc, "bobr");
                 Transaction transactionOld = new Transaction(doc, "bobr2");
 
-                transactionNew.Start();
-                ViewSheet sheet = ViewSheet.Create(newDoc, ElementId.InvalidElementId);
-                transactionNew.Commit();
+                //transactionNew.Start();
+                //ViewSheet sheet = ViewSheet.Create(newDoc, ElementId.InvalidElementId);
+                //transactionNew.Commit();
 
                 foreach (ElementId id in selectedIds)
                 {
@@ -96,23 +99,27 @@ namespace revit_plugin_1
                     //TaskDialog.Show("revit", doc.GetElement(id).ToString());
 
                     ElementId viewId = id;
-                    if(doc.GetElement(id).ToString() == "Autodesk.Revit.DB.Viewport")
+                    if (doc.GetElement(id).ToString() == "Autodesk.Revit.DB.Viewport")
                     {
                         Viewport testPort = doc.GetElement(id) as Viewport;
                         view = doc.GetElement(testPort.ViewId) as View;
                         viewId = testPort.ViewId;
                     }
-                    
-                    ICollection<ElementId> dest = ElementTransformUtils.CopyElements(doc, new List<ElementId> { viewId }, newDoc, Transform.Identity, null);
 
-                    View destView = newDoc.GetElement(dest.ElementAt(0)) as View;
-                    var parts = new FilteredElementCollector(doc, view.Id);
-                    List<ElementId> items = parts.WhereElementIsNotElementType().ToElementIds().ToList();
-                    items.RemoveAt(0);
+                    copiedViews.Add(viewId);
 
-                    ElementTransformUtils.CopyElements(view, items, destView, Transform.Identity, null);
+                    //ICollection<ElementId> dest = ElementTransformUtils.CopyElements(doc, new List<ElementId> { viewId }, newDoc, Transform.Identity, null);
 
-                    Viewport viewPort = Viewport.Create(newDoc, sheet.Id, destView.Id, new XYZ());
+                    //View destView = newDoc.GetElement(dest.ElementAt(0)) as View;
+                    //var parts = new FilteredElementCollector(doc, view.Id);
+                    //List<ElementId> items = parts.WhereElementIsNotElementType().ToElementIds().ToList();
+                    //items.RemoveAt(0);
+
+                    //ElementTransformUtils.CopyElements(view, items, destView, Transform.Identity, null);
+                    Copy(doc, newDoc, view, viewId);
+
+
+                    //Viewport viewPort = Viewport.Create(newDoc, sheet.Id, destView.Id, new XYZ());
 
                     transactionNew.Commit();
                 }
@@ -125,5 +132,52 @@ namespace revit_plugin_1
 
             return Result.Succeeded;
         }
+        private void Copy(Document doc, Document newDoc, View view, ElementId viewId, bool linkBack = false, ElementId linkId = default)
+        {
+            copiedViews.Add(viewId);
+            ICollection<ElementId> dest = ElementTransformUtils.CopyElements(doc, new List<ElementId> { viewId }, newDoc, Transform.Identity, null);
+
+            View destView = newDoc.GetElement(dest.ElementAt(0)) as View;
+            var parts = new FilteredElementCollector(doc, view.Id);
+            List<ElementId> items = parts.WhereElementIsNotElementType().ToElementIds().ToList();
+            items.RemoveAt(0);
+
+            string text = " ";
+            for (int i = 0; i < items.Count; ++i)
+            {
+                ElementId itemId = items[i];
+                text += doc.GetElement(itemId).ToString() + ": " + itemId + '\n';
+                if (doc.GetElement(itemId).ToString() == "Autodesk.Revit.DB.Element")
+                {
+                    var loc = (doc.GetElement(itemId) as ViewSection).Location as LocationCurve;
+                    TaskDialog.Show("revit", loc.ToString());
+                    try
+                    {
+                        viewId = ReferenceableViewUtils.GetReferencedViewId(doc, itemId);
+                    }
+                    catch(Exception e)
+                    {
+                        continue;
+                    }
+                    View newView = doc.GetElement(viewId) as View;
+                    TaskDialog.Show("revit", "view: " + view.Name);
+                    if (!copiedViews.Contains(viewId))
+                    {
+                        copiedViews.Add(viewId);
+                        Copy(doc, newDoc, newView, viewId, true, destView.Id);
+                        //ViewSection.CreateReferenceSection(newDoc, viewID, viewId, new XYZ(), new XYZ());
+                    }
+                    items.RemoveAt(i);
+                }
+            }
+            TaskDialog.Show("revit", "copying items: " + text);
+
+            ElementTransformUtils.CopyElements(view, items, destView, Transform.Identity, null);
+            if(linkBack)
+            {
+                ViewSection.CreateReferenceSection(newDoc, linkId, destView.Id, new XYZ(), new XYZ(10, 10, 10));
+            }
+        }
     }
+    
 }
