@@ -17,6 +17,7 @@ namespace revit_plugin_1
     public class CopyNew : IExternalCommand
     {
         private List<ElementId> copiedViews = new List<ElementId>();
+        private List<ElementId> copyIn = new List<ElementId>();
         private List<Tuple<ElementId, ElementId>> linked = new List<Tuple<ElementId, ElementId>>();
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -142,40 +143,60 @@ namespace revit_plugin_1
             List<ElementId> items = parts.WhereElementIsNotElementType().ToElementIds().ToList();
             items.RemoveAt(0);
 
-            string text = " ";
+            //string text = " ";
+            //for(int i = 0; i< items.Count; ++i)
+            //{
+            //    ElementId itemId = items[i];
+            //    Element item = doc.GetElement(itemId);
+            //    text += "item " + item.ToString() + ", " + item.Name + "\n";
+            //}
+            //TaskDialog.Show("revit", "copying items: " + text);
+
             for (int i = 0; i < items.Count; ++i)
             {
                 ElementId itemId = items[i];
-                text += doc.GetElement(itemId).ToString() + ": " + itemId + '\n';
+                string item = doc.GetElement(itemId).ToString();
                 if (doc.GetElement(itemId).ToString() == "Autodesk.Revit.DB.Element")
                 {
-                    var loc = (doc.GetElement(itemId) as ViewSection).Location as LocationCurve;
-                    TaskDialog.Show("revit", loc.ToString());
                     try
                     {
                         viewId = ReferenceableViewUtils.GetReferencedViewId(doc, itemId);
                     }
-                    catch(Exception e)
+                    catch(Exception)
                     {
                         continue;
                     }
                     View newView = doc.GetElement(viewId) as View;
-                    TaskDialog.Show("revit", "view: " + view.Name);
+                    TaskDialog.Show("revit", "found linked view " + newView.Name);
                     if (!copiedViews.Contains(viewId))
                     {
                         copiedViews.Add(viewId);
+                        //TaskDialog.Show("revit", "adding new view " + newView.Name);
                         Copy(doc, newDoc, newView, viewId, true, destView.Id);
                         //ViewSection.CreateReferenceSection(newDoc, viewID, viewId, new XYZ(), new XYZ());
                     }
+                    else
+                    {
+                        TaskDialog.Show("revit", newView.Name + "already exists");
+                        ElementId copyId = new FilteredElementCollector(newDoc).WhereElementIsElementType().ToElements().Where(o => o.Name == "Given string").First().Id;
+
+                            copyIn.Add(copyId);
+                    }
                     items.RemoveAt(i);
+                    --i;
                 }
             }
-            TaskDialog.Show("revit", "copying items: " + text);
+            
 
             ElementTransformUtils.CopyElements(view, items, destView, Transform.Identity, null);
-            if(linkBack)
+
+            if (linkBack)
             {
-                ViewSection.CreateReferenceSection(newDoc, linkId, destView.Id, new XYZ(), new XYZ(10, 10, 10));
+                ViewSection.CreateReferenceSection(newDoc, linkId, destView.Id, new XYZ(), new XYZ(0.1, 0.1, 0.1));
+            }
+            foreach(var element in copyIn)
+            {
+                ViewSection.CreateReferenceSection(newDoc, destView.Id, element, new XYZ(), new XYZ(0.1, 0.1, 0.1));
             }
         }
     }
