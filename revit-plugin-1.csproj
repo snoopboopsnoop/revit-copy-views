@@ -57,6 +57,7 @@
     <Compile Include="CopyNew.cs" />
     <Compile Include="CopyTo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Reference.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="revit-plugin-1.addin" />

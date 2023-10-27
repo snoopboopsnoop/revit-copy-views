@@ -17,7 +17,8 @@ namespace revit_plugin_1
     public class CopyNew : IExternalCommand
     {
         private List<ElementId> copiedViews = new List<ElementId>();
-        private List<ElementId> copyIn = new List<ElementId>();
+        // (id to reference, (min, max))
+        private List<Tuple<ElementId, Tuple<XYZ, XYZ>>> copyIn = new List<Tuple<ElementId, Tuple<XYZ, XYZ>>>();
         private List<Tuple<ElementId, ElementId>> linked = new List<Tuple<ElementId, ElementId>>();
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -34,7 +35,6 @@ namespace revit_plugin_1
                 ICollection<ElementId> selectedIds = uidoc.Selection.GetElementIds();
 
                 View src_view = doc.ActiveView;
-                bool chooseFile = true;
                 bool docExists = false;
 
                 DocumentSet documents = commandData.Application.Application.Documents;
@@ -133,8 +133,9 @@ namespace revit_plugin_1
 
             return Result.Succeeded;
         }
-        private void Copy(Document doc, Document newDoc, View view, ElementId viewId, bool linkBack = false, ElementId linkId = default)
+        private List<Tuple<ElementId, string>> Copy(Document doc, Document newDoc, View view, ElementId viewId, bool linkBack = false, ElementId linkId = default, XYZ min = default, XYZ max = default)
         {
+            List<Tuple<ElementId, string>> copies = new List<Tuple<ElementId, string>>(); 
             copiedViews.Add(viewId);
             ICollection<ElementId> dest = ElementTransformUtils.CopyElements(doc, new List<ElementId> { viewId }, newDoc, Transform.Identity, null);
 
@@ -158,6 +159,10 @@ namespace revit_plugin_1
                 string item = doc.GetElement(itemId).ToString();
                 if (doc.GetElement(itemId).ToString() == "Autodesk.Revit.DB.Element")
                 {
+                    Element element = doc.GetElement(itemId) ;
+                    BoundingBoxXYZ bb = element.get_BoundingBox(view);
+                    TaskDialog.Show("revit", "element name: " + element.Name);
+                    TaskDialog.Show("revit", "bb: " + element.get_BoundingBox(view).Min + " to " + element.get_BoundingBox(view).Max);
                     try
                     {
                         viewId = ReferenceableViewUtils.GetReferencedViewId(doc, itemId);
@@ -166,21 +171,22 @@ namespace revit_plugin_1
                     {
                         continue;
                     }
+
                     View newView = doc.GetElement(viewId) as View;
                     TaskDialog.Show("revit", "found linked view " + newView.Name);
                     if (!copiedViews.Contains(viewId))
                     {
                         copiedViews.Add(viewId);
                         //TaskDialog.Show("revit", "adding new view " + newView.Name);
-                        Copy(doc, newDoc, newView, viewId, true, destView.Id);
+                        Copy(doc, newDoc, newView, viewId, true, destView.Id, bb.Min, bb.Max);
                         //ViewSection.CreateReferenceSection(newDoc, viewID, viewId, new XYZ(), new XYZ());
                     }
                     else
                     {
                         TaskDialog.Show("revit", newView.Name + "already exists");
-                        ElementId copyId = new FilteredElementCollector(newDoc).WhereElementIsElementType().ToElements().Where(o => o.Name == "Given string").First().Id;
+                        //ElementId copyId = new FilteredElementCollector(newDoc).WhereElementIsElementType().ToElements().Where(o => o.Name == "Given string").First().Id;
 
-                            copyIn.Add(copyId);
+                        //    copyIn.Add(copyId);
                     }
                     items.RemoveAt(i);
                     --i;
@@ -192,13 +198,15 @@ namespace revit_plugin_1
 
             if (linkBack)
             {
-                ViewSection.CreateReferenceSection(newDoc, linkId, destView.Id, new XYZ(), new XYZ(0.1, 0.1, 0.1));
+                //ViewSection.CreateReferenceCallout(newDoc, linkId, destView.Id, min, max);
+                ViewSection.CreateReferenceSection(newDoc, linkId, destView.Id, min, max);
             }
-            foreach(var element in copyIn)
-            {
-                ViewSection.CreateReferenceSection(newDoc, destView.Id, element, new XYZ(), new XYZ(0.1, 0.1, 0.1));
-            }
+            //foreach(var element in copyIn)
+            //{
+            //    ViewSection.CreateReferenceSection(newDoc, destView.Id, element, new XYZ(), new XYZ(0.1, 0.1, 0.1));
+            //}
+
+            return copies;
         }
     }
-    
 }
