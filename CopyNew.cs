@@ -143,7 +143,6 @@ namespace revit_plugin_1
             var parts = new FilteredElementCollector(doc, view.Id);
             List<ElementId> items = parts.WhereElementIsNotElementType().ToElementIds().ToList();
             items.RemoveAt(0);
-
             //string text = " ";
             //for(int i = 0; i< items.Count; ++i)
             //{
@@ -153,16 +152,32 @@ namespace revit_plugin_1
             //}
             //TaskDialog.Show("revit", "copying items: " + text);
 
+            string text = "items: \n";
             for (int i = 0; i < items.Count; ++i)
             {
                 ElementId itemId = items[i];
                 string item = doc.GetElement(itemId).ToString();
+                text += item + "\n";
                 if (doc.GetElement(itemId).ToString() == "Autodesk.Revit.DB.Element")
                 {
                     Element element = doc.GetElement(itemId) ;
                     BoundingBoxXYZ bb = element.get_BoundingBox(view);
                     TaskDialog.Show("revit", "element name: " + element.Name);
                     TaskDialog.Show("revit", "bb: " + element.get_BoundingBox(view).Min + " to " + element.get_BoundingBox(view).Max);
+
+                    Outline outline = new Outline(bb.Min, bb.Max);
+
+                    ElementIntersectsElementFilter filter = new ElementIntersectsElementFilter(element);
+
+                    IList<Element> elements = new FilteredElementCollector(doc, viewId).WherePasses(filter).ToElements();
+
+                    string es = "interesect: \n";
+                    foreach(var e in elements)
+                    {
+                        es += e + "\n";
+                    }
+                    TaskDialog.Show("revit", es);
+
                     try
                     {
                         viewId = ReferenceableViewUtils.GetReferencedViewId(doc, itemId);
@@ -178,7 +193,8 @@ namespace revit_plugin_1
                     {
                         copiedViews.Add(viewId);
                         //TaskDialog.Show("revit", "adding new view " + newView.Name);
-                        Copy(doc, newDoc, newView, viewId, true, destView.Id, bb.Min, bb.Max);
+                        XYZ head = new XYZ(bb.Min.X + (bb.Max.X - bb.Min.X) / 2, bb.Min.Y - (bb.Min.Y - bb.Max.Y)/2, bb.Min.Z);
+                        Copy(doc, newDoc, newView, viewId, true, destView.Id, head, bb.Max);
                         //ViewSection.CreateReferenceSection(newDoc, viewID, viewId, new XYZ(), new XYZ());
                     }
                     else
@@ -192,7 +208,7 @@ namespace revit_plugin_1
                     --i;
                 }
             }
-            
+            //TaskDialog.Show("revit", text);
 
             ElementTransformUtils.CopyElements(view, items, destView, Transform.Identity, null);
 
